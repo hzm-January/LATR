@@ -86,14 +86,10 @@ class LATRHead(nn.Module):
             torch.from_numpy(args.anchor_y_steps).float())
         self.register_buffer('anchor_y_steps_dense',
             torch.from_numpy(args.anchor_y_steps_dense).float())
-        self.project_crit_t = project_crit.pop('type')
-        
+
         project_crit['reduction'] = 'none'
-        if 'L2' in self.project_crit_t:
-            self.project_crit = nn.L1Loss(reduction='none')
-        else:
-            self.project_crit = getattr(
-                nn, self.project_crit_t)(**project_crit)
+        self.project_crit = getattr(
+            nn, project_crit.pop('type'))(**project_crit)
 
         self.num_classes = num_classes
         self.embed_dims = embed_dims
@@ -340,14 +336,10 @@ class LATRHead(nn.Module):
                 projct_result[:, :3, ...],
                 gt_proj[:, :3, ...],
             )
-            if 'L2' in self.project_crit_t:
-                diff_loss = torch.norm(diff_loss * mask.unsqueeze(1), p=2, dim=1).sum() / torch.clamp(mask.sum(), 1)
-                diff_loss = diff_loss * 0.1
-            else:
-                diff_y_loss = diff_loss[:, 1, ...]
-                diff_z_loss = diff_loss[:, 2, ...]
-                diff_loss = diff_y_loss * 0.1 + diff_z_loss
-                diff_loss = (diff_loss * mask).sum() / torch.clamp(mask.sum(), 1)
+            diff_y_loss = diff_loss[:, 1, ...]
+            diff_z_loss = diff_loss[:, 2, ...]
+            diff_loss = diff_y_loss * 0.1 + diff_z_loss
+            diff_loss = (diff_loss * mask).sum() / torch.clamp(mask.sum(), 1)
             all_loss = all_loss + diff_loss
 
         return all_loss / len(results)
