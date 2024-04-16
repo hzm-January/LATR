@@ -11,11 +11,13 @@ mod = 'release_iccv/apollo_standard'
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
 
+save_path = '/home/houzm/houzm/03_model/latr/apollo/train/0327'
+save_json_path = '/home/houzm/houzm/03_model/latr/apollo/train/0327/json'
 
 dataset_name = 'apollo'
 dataset = 'standard'
-data_dir = osp.join('./data/apollosyn_gen-lanenet/data_splits', dataset)
-dataset_dir = './data/apollosyn_gen-lanenet/Apollo_Sim_3D_Lane_Release'
+data_dir = osp.join('/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/apollosyn_gen-lanenet/data_splits', dataset)
+dataset_dir = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/apollosyn_gen-lanenet/Apollo_Sim_3D_Lane_Release'
 output_dir = 'apollo'
 num_category = 2
 max_lanes = 6
@@ -23,12 +25,12 @@ max_lanes = 6
 T_max = 30
 eta_min = 1e-6
 clip_grad_norm = 20
-nepochs = 210
+nepochs = 210 # 210
 eval_freq = 1
 
 h_org, w_org = 1080, 1920
 
-batch_size = 8
+batch_size = 1
 nworkers = 10
 pos_threshold = 0.3
 top_view_region = np.array([
@@ -96,7 +98,7 @@ transformer=dict(
     decoder=dict(
         type='LATRTransformerDecoder',
         embed_dims=_dim_,
-        num_layers=6,
+        num_layers=6,  # 6
         enlarge_length=enlarge_length,
         M_decay_ratio=1,
         num_query=num_query,

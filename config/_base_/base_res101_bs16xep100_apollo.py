@@ -6,8 +6,8 @@ import numpy as np
 dataset_name = 'apollo'
 dataset = 'standard'
 
-data_dir = osp.join('./data/apollosyn_gen-lanenet/data_splits', dataset)
-dataset_dir = './data/apollosyn_gen-lanenet/Apollo_Sim_3D_Lane_Release'
+data_dir = osp.join('/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/apollosyn_gen-lanenet/data_splits', dataset)
+dataset_dir = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/apollosyn_gen-lanenet/Apollo_Sim_3D_Lane_Release'
 
 output_dir = 'apollo'
 
@@ -47,9 +47,9 @@ num_category = 2
 prob_th = 0.5
 num_class = 2 # 1 bgd | 1 lanes
 
-batch_size = 16
+batch_size = 1
 nepochs = 210
-nworkers = 16
+nworkers = 1
 
 # ddp setting
 dist = True
@@ -90,6 +90,6 @@ top_view_region = np.array([[-10, 103], [10, 103], [-10, 3], [10, 3]])
 anchor_y_steps = np.linspace(3, 103, 25)
 num_y_steps = len(anchor_y_steps)
 
-save_path = None
-save_json_path = None
+save_path = '/home/houzm/houzm/03_model/latr/apollo/train/1112'
+save_json_path = '/home/houzm/houzm/03_model/latr/apollo/train/1112/json'
 

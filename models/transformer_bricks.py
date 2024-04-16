@@ -235,48 +235,48 @@ class MSDeformableAttention3D(BaseModule):
         bs, num_value, _ = value.shape
         assert (spatial_shapes[:, 0] * spatial_shapes[:, 1]).sum() == num_value
 
-        value = self.value_proj(value)
+        value = self.value_proj(value) # (1,10800,256)
         if key_padding_mask is not None:
             value = value.masked_fill(key_padding_mask[..., None], 0.0)
-        value = value.view(bs, num_value, self.num_heads, -1)
+        value = value.view(bs, num_value, self.num_heads, -1) # (1,10800,4,64)
 
-        sampling_offsets = self.sampling_offsets(query).view(
+        sampling_offsets = self.sampling_offsets(query).view( # query(1,240,256)->(1,240,1,4,1,8,2)
             bs, num_query, self.num_points_per_anchor,
             self.num_heads, self.num_levels, self.num_points, 2)
-        attention_weights = self.attention_weights(query).view(
+        attention_weights = self.attention_weights(query).view( # query(1,240,256)->(1,240,1,4,8)
             bs, num_query, self.num_points_per_anchor,
             self.num_heads, self.num_levels * self.num_points)
 
         attention_weights = attention_weights.softmax(-1)
-        attention_weights = attention_weights.view(bs, num_query,
+        attention_weights = attention_weights.view(bs, num_query, # (1,240,1,4,8)->(1,240,1,4,1,8)
                                                    self.num_points_per_anchor,
                                                    self.num_heads,
                                                    self.num_levels,
                                                    self.num_points)
 
-        reference_points = reference_points.view(
+        reference_points = reference_points.view(  #->(1,12,20,1,2)
             bs, self.num_query, self.num_anchor_per_query, -1, 2)
-        ref_pt3d = torch.cat([
+        ref_pt3d = torch.cat([ # (1,12,20,1,3)
             reference_points[..., 0:1], # x
             self.anchor_y_steps.view(1, 1, self.num_anchor_per_query, -1, 1
                 ).expand_as(reference_points[..., 0:1]), # y
             reference_points[..., 1:2] # z
         ], dim=-1)
 
-        sampling_locations = self.ref_to_lidar(ref_pt3d, pc_range, not_y=True)
-        sampling_locations2d, mask = self.point_sampling(
+        sampling_locations = self.ref_to_lidar(ref_pt3d, pc_range, not_y=True) # (1,12,20,1,3)
+        sampling_locations2d, mask = self.point_sampling( # sampling_locations2d (1,240,2) mask(1,240)
             F.pad(sampling_locations.flatten(1, 2), (0, 1), value=1),
             lidar2img=lidar2img, ori_shape=pad_shape,
         )
-        sampling_locations2d = sampling_locations2d.view(
+        sampling_locations2d = sampling_locations2d.view( # (1,240,2)->(1,12,20,1,2)
             *sampling_locations.shape[:-1], 2)
 
         offset_normalizer = torch.stack(
             [spatial_shapes[..., 1], spatial_shapes[..., 0]], -1)
         sampling_offsets = sampling_offsets / \
-            offset_normalizer[None, None, None, :, None, :]
+            offset_normalizer[None, None, None, :, None, :] # (1,240,1,4,1,8,2)
 
-        sampling_locations2d = sampling_locations2d.view(
+        sampling_locations2d = sampling_locations2d.view( # (1,12,20,1,4,1,8,2)
                 bs, self.num_query, self.num_anchor_per_query, -1, 1, 1, 1, 2) \
             + sampling_offsets.view(
                 bs, self.num_query, self.num_anchor_per_query, self.num_points_per_anchor,
@@ -284,21 +284,21 @@ class MSDeformableAttention3D(BaseModule):
             )
 
         # reshape, move self.num_anchor_per_query to last axis
-        sampling_locations2d = sampling_locations2d.permute(0, 1, 2, 4, 5, 6, 3, 7)
-        attention_weights = attention_weights.permute(0, 1, 3, 4, 5, 2)
-        sampling_locations2d = sampling_locations2d.flatten(-3, -2)
-        attention_weights = attention_weights.flatten(-2) / self.num_points_per_anchor
+        sampling_locations2d = sampling_locations2d.permute(0, 1, 2, 4, 5, 6, 3, 7) # (1,12,20,1,4,1,8,2)->(1,12,20,4,1,8,1,2)
+        attention_weights = attention_weights.permute(0, 1, 3, 4, 5, 2) # (1,240,4,1,8,1)
+        sampling_locations2d = sampling_locations2d.flatten(-3, -2) # (1,12,20,4,1,8,1,2)->(1,12,20,4,1,8,2)
+        attention_weights = attention_weights.flatten(-2) / self.num_points_per_anchor # (1,240,4,1,8)
 
         xy = 2
         num_all_points = sampling_locations2d.shape[-2]
 
-        sampling_locations2d = sampling_locations2d.view(
+        sampling_locations2d = sampling_locations2d.view( # (1,240,4,1,8,2)
             bs, num_query, self.num_heads, self.num_levels, num_all_points, xy)
 
         if torch.cuda.is_available() and value.is_cuda:
-            output = MultiScaleDeformableAttnFunction.apply(
-                value, spatial_shapes, level_start_index, sampling_locations2d,
-                attention_weights, self.im2col_step)
+            output = MultiScaleDeformableAttnFunction.apply( # value (1,10800,4,64) attention_weights (1,240,4,1,8)
+                value, spatial_shapes, level_start_index, sampling_locations2d, # spatial_shapes [[90,120]]
+                attention_weights, self.im2col_step) # sampling_locations2d (1,240,4,1,8,2) im2col_step=64
         else:
             output = multi_scale_deformable_attn_pytorch(
                 value, spatial_shapes, sampling_locations2d, attention_weights)
@@ -476,8 +476,9 @@ class LATRTransformerDecoder(TransformerLayerSequence):
 
             # update M
             if layer_idx < len(self.layers) - 1:
-                input_feat = torch.cat([img_feats[0], coords_img], dim=1)
-                M = M.detach() @ self.pred2M(self.gflat_pred_layer(input_feat).squeeze(-1).squeeze(-1))
+                input_feat = torch.cat([img_feats[0], coords_img], dim=1) # [img_feats[0], coords_img] = [X,M_p]
+                # 这里的M指论文中的 P_l 和 P_{l-1}
+                M = M.detach() @ self.pred2M(self.gflat_pred_layer(input_feat).squeeze(-1).squeeze(-1)) # P_l = P_{l-1} * MLP(AvgPool(g[X,M_p]))->D
                 ref_3d_homo = (init_ref_3d_homo.flatten(1, 2) @ M.permute(0, 2, 1)
                               ).view(*ref_3d_homo.shape)
 

@@ -6,13 +6,17 @@ _base_ = [
     '../_base_/optimizer.py'
 ]
 
+save_path = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/work_dirs/openlane/release_iccv/latr_1000_baseline/1224'
+save_json_path = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/work_dirs/openlane/release_iccv/latr_1000_baseline/1224/json'
+
 mod = 'release_iccv/latr_1000_baseline'
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
 
+dataset_name = 'openlane'
 dataset = '1000'
-dataset_dir = './data/openlane/images/'
-data_dir = './data/openlane/lane3d_1000/'
+dataset_dir = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/openlane/images/'
+data_dir = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/openlane/lane3d_1000/'
 
 batch_size = 8
 nworkers = 10
@@ -166,3 +170,4 @@ optimizer_cfg = dict(
             'sampling_offsets': dict(lr_mult=0.1),
         }),
     weight_decay=0.01)
+evaluate_case = True #''

@@ -75,7 +75,7 @@ def ddp_init(args):
 
     if 'WORLD_SIZE' in os.environ:
         args.distributed = int(os.environ['WORLD_SIZE']) >= 1
-
+    # args.distributed=False #TODO: GPU爆显存，排查问题暂时设置为False，有时间修改
     if args.distributed:
         setup_distributed(args)
 

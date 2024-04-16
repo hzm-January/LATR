@@ -11,11 +11,13 @@ mod = 'release_iccv/apollo_illu'
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
 
+save_path = '/home/houzm/houzm/03_model/latr/apollo/train/0217_illu'
+save_json_path = '/home/houzm/houzm/03_model/latr/apollo/train/0217_illu/json'
 
 dataset_name = 'apollo'
 dataset = 'illus_chg'
-data_dir = osp.join('./data/apollosyn_gen-lanenet/data_splits', dataset)
-dataset_dir = './data/apollosyn_gen-lanenet/Apollo_Sim_3D_Lane_Release'
+data_dir = osp.join('/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/apollosyn_gen-lanenet/data_splits', dataset)
+dataset_dir = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/apollosyn_gen-lanenet/Apollo_Sim_3D_Lane_Release'
 output_dir = 'apollo'
 num_category = 2
 max_lanes = 6
@@ -28,7 +30,7 @@ eval_freq = 1
 
 h_org, w_org = 1080, 1920
 
-batch_size = 8
+batch_size = 5
 nworkers = 10
 pos_threshold = 0.5
 top_view_region = np.array([

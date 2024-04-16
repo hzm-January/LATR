@@ -293,6 +293,19 @@ class Runner:
                 image = image.contiguous().float()
                 
                 output = model(image=image, extra_dict=extra_dict, is_training=False)
+
+                # # compute FPS
+                # iterations = 1000
+                # torch.cuda.synchronize()
+                # start = time.time()
+                # for _ in range(iterations):
+                #     output = model(image=image, extra_dict=extra_dict, is_training=False)
+                # torch.cuda.synchronize()
+                # end = time.time()
+                # FPS = image.shape[0] * iterations / (end - start)
+                # print("FPS: ", FPS)
+                # break
+
                 all_line_preds = output['all_line_preds'] # in ground coordinate system
                 all_cls_scores = output['all_cls_scores']
 
@@ -624,8 +637,8 @@ class Runner:
             if not args.evaluate_case:
                 valid_dataset = LaneDataset(args.dataset_dir, args.data_dir + 'validation/', args)
             else:
-                # TODO eval case
-                valid_dataset = LaneDataset(args.dataset_dir, args.data_dir + 'test/up_down_case/', args)
+                # TODO eval case ['up_down_case','curve_case','extreme_weather_case','intersection_case','merge_split_case','night_case']
+                valid_dataset = LaneDataset(args.dataset_dir, args.data_dir + 'test/night_case/', args)
 
         elif 'once' in args.dataset_name:
             valid_dataset = LaneDataset(args.dataset_dir, ops.join(args.data_dir, 'val/'), args)
@@ -712,25 +725,31 @@ class Runner:
 
 
 def set_work_dir(cfg):
-    # =========output path========== #
-    save_prefix = osp.join(os.getcwd(), 'work_dirs')
-    save_root = osp.join(save_prefix, cfg.output_dir)
+    # # =========output path========== #
+    # save_prefix = osp.join(os.getcwd(), 'work_dirs')
+    # save_root = osp.join(save_prefix, cfg.output_dir)
 
     # cur work dirname
     cfg_path = Path(cfg.config)
 
-    if cfg.mod is None:
-        cfg.mod = os.path.join(cfg_path.parent.name, cfg_path.stem)
-    
-    save_ppath = Path(save_root, cfg.mod)
-    save_ppath.mkdir(parents=True, exist_ok=True)
+    # if cfg.mod is None:
+    #     cfg.mod = os.path.join(cfg_path.parent.name, cfg_path.stem)
+    #
+    # save_ppath = Path(save_root, cfg.mod)
+    # save_ppath.mkdir(parents=True, exist_ok=True)
+    #
+    # cfg.save_path = save_ppath.as_posix()
+    # cfg.save_json_path = cfg.save_path
 
+    save_ppath = Path(cfg.save_path)
+    save_ppath.mkdir(parents=True, exist_ok=True)
+    save_json_ppath = Path(cfg.save_json_path)
+    save_json_ppath.mkdir(parents=True, exist_ok=True)
     cfg.save_path = save_ppath.as_posix()
-    cfg.save_json_path = cfg.save_path
-    
+    cfg.save_json_path = save_json_ppath.as_posix()
+
     seg_output_dir = Path(cfg.save_path, 'seg_vis')
     seg_output_dir.mkdir(parents=True, exist_ok=True)
 
     # cp config into cur_work_dir
     shutil.copy(cfg_path.as_posix(), cfg.save_path)
-    
