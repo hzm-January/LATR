@@ -11,8 +11,8 @@ mod = 'release_iccv/apollo_rare'
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
 
-save_path = '/home/houzm/houzm/03_model/latr/apollo/train/0217'
-save_json_path = '/home/houzm/houzm/03_model/latr/apollo/train/0217/json'
+save_path = '/home/houzm/houzm/03_model/latr/apollo/train/0429_rare'
+save_json_path = '/home/houzm/houzm/03_model/latr/apollo/train/0429_rare/json'
 
 dataset_name = 'apollo'
 dataset = 'rare_subset'
