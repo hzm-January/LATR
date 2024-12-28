@@ -366,7 +366,7 @@ class Runner:
                         lanelines_pred = []
                         lanelines_prob = []
                         xs = pos_lanes[:, 0:args.num_y_steps]
-                        ys = np.tile(args.anchor_y_steps.copy()[None, :], (xs.shape[0], 1))
+                        ys = np.tile(np.array(args.anchor_y_steps).copy()[None, :], (xs.shape[0], 1))
                         zs = pos_lanes[:, args.num_y_steps:2*args.num_y_steps]
                         vis = pos_lanes[:, 2*args.num_y_steps:]
 
