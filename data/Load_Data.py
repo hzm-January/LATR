@@ -68,10 +68,10 @@ class LaneDataset(Dataset):
         self.w_net = args.resize_w
         self.u_ratio = float(self.w_net) / float(self.w_org)
         self.v_ratio = float(self.h_net) / float(self.h_org - self.h_crop)
-        self.top_view_region = args.top_view_region
+        self.top_view_region = np.array(args.top_view_region)
         self.max_lanes = args.max_lanes
 
-        self.K = args.K
+        self.K = np.array(args.K)
         self.H_crop = homography_crop_resize([args.org_h, args.org_w], args.crop_y, [args.resize_h, args.resize_w])
 
         if args.fix_cam:
@@ -89,7 +89,7 @@ class LaneDataset(Dataset):
         self.x_min, self.x_max = self.top_view_region[0, 0], self.top_view_region[1, 0]
         self.y_min, self.y_max = self.top_view_region[2, 1], self.top_view_region[0, 1]
         
-        self.anchor_y_steps = args.anchor_y_steps
+        self.anchor_y_steps = np.array(args.anchor_y_steps)
         self.num_y_steps = len(self.anchor_y_steps)
 
         self.anchor_y_steps_dense = args.get(

@@ -1,13 +1,29 @@
 import numpy as np
-from mmcv.utils import Config
+# from mmcv.utils import Config
+from mmengine.config import Config
+#
+# _base_ = [
+#     '../_base_/base_res101_bs16xep100.py',
+#     '../_base_/optimizer.py'
+# ]
 
-_base_ = [
-    '../_base_/base_res101_bs16xep100.py',
-    '../_base_/optimizer.py'
-]
+from mmengine.config import read_base
+with read_base():
+    from .._base_.base_res101_bs16xep100 import *
+    from .._base_.optimizer import *
 
-save_path = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/work_dirs/openlane/release_iccv/latr_1000_baseline/1224'
-save_json_path = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/work_dirs/openlane/release_iccv/latr_1000_baseline/1224/json'
+# top_view_region = np.array([[-10, 103], [10, 103], [-10, 3], [10, 3]])
+# anchor_y_steps = np.linspace(3, 103, 25)
+# num_y_steps = len(anchor_y_steps)
+#
+# # placeholder, not used
+# K = np.array([[1000., 0., 960.],
+#             [0., 1000., 640.],
+#             [0., 0., 1.]])
+
+
+save_path = '/root/autodl-tmp/output/latr/v1'
+save_json_path = '/root/autodl-tmp/output/latr/v1/json'
 
 mod = 'release_iccv/latr_1000_baseline'
 mean = [0.485, 0.456, 0.406]
@@ -15,15 +31,17 @@ std = [0.229, 0.224, 0.225]
 
 dataset_name = 'openlane'
 dataset = '1000'
-dataset_dir = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/openlane/images/'
-data_dir = '/home/houzm/houzm/02_code/latr/latr_jmoonr_offical/data/openlane/lane3d_1000/'
+dataset_dir = '/root/autodl-tmp/dataset/lane_det_3d/images/'
+data_dir = '/root/autodl-tmp/dataset/lane_det_3d/lane3d_300/'
 
 batch_size = 8
 nworkers = 10
 num_category = 21
 pos_threshold = 0.3
-top_view_region = np.array([
-    [-10, 103], [10, 103], [-10, 3], [10, 3]])
+# top_view_region = np.array([
+#     [-10, 103], [10, 103], [-10, 3], [10, 3]])
+top_view_region = [
+    [-10, 103], [10, 103], [-10, 3], [10, 3]]
 enlarge_length = 20
 position_range = [
     top_view_region[0][0] - enlarge_length,
@@ -32,7 +50,11 @@ position_range = [
     top_view_region[1][0] + enlarge_length,
     top_view_region[0][1] + enlarge_length,
     5.]
-anchor_y_steps = np.linspace(3, 103, 20)
+# anchor_y_steps = np.linspace(3, 103, 20)
+anchor_y_steps = [3.0, 8.263157894736842, 13.526315789473685, 18.789473684210527, 24.05263157894737,
+                  29.315789473684212, 34.578947368421055, 39.8421052631579, 45.10526315789474, 50.36842105263158,
+                  55.631578947368425, 60.89473684210527, 66.15789473684211, 71.42105263157896,
+                  76.6842105263158, 81.94736842105263, 87.21052631578948, 92.47368421052633, 97.73684210526316, 103.0]
 num_y_steps = len(anchor_y_steps)
 
 # extra aug

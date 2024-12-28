@@ -7,18 +7,27 @@ import torch.nn as nn
 from torch.nn import init
 import torch.nn.functional as F
 
-from fvcore.nn.weight_init import c2_msra_fill, c2_xavier_fill
+# from fvcore.nn.weight_init import c2_msra_fill, c2_xavier_fill
 
-from mmdet.models.utils.builder import TRANSFORMER
+# from mmdet.models.utils.builder import TRANSFORMER
+from mmengine import MODELS
+
 from mmcv.cnn.bricks.transformer import FFN, build_positional_encoding
+# from mmcv.cnn import (build_activation_layer, build_conv_layer,
+#                       build_norm_layer, xavier_init, constant_init)
 from mmcv.cnn import (build_activation_layer, build_conv_layer,
-                      build_norm_layer, xavier_init, constant_init)
-from mmcv.runner.base_module import BaseModule
+                      build_norm_layer)
+from mmengine.model import xavier_init, constant_init
+
+# from mmcv.runner.base_module import BaseModule
+from mmengine.model import BaseModule
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
-from mmcv.cnn.bricks.registry import (ATTENTION,TRANSFORMER_LAYER,
-                                      TRANSFORMER_LAYER_SEQUENCE)
+# from mmcv.cnn.bricks.registry import (ATTENTION,TRANSFORMER_LAYER,
+#                                       TRANSFORMER_LAYER_SEQUENCE)
+
+
 from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttnFunction
 
 from .scatter_utils import scatter_mean
@@ -101,7 +110,7 @@ def ground2img(coords3d, H, W, lidar2img, ori_shape, mask=None, return_img_pts=F
     return canvas
 
 
-@ATTENTION.register_module()
+@MODELS.register_module()
 class MSDeformableAttention3D(BaseModule):
     def __init__(self,
                  embed_dims=256,
@@ -129,7 +138,7 @@ class MSDeformableAttention3D(BaseModule):
         self.num_query = num_query
         self.num_anchor_per_query = num_anchor_per_query
         self.register_buffer('anchor_y_steps',
-            torch.from_numpy(anchor_y_steps).float())
+            torch.from_numpy(np.array(anchor_y_steps)).float())
         self.num_points_per_anchor = len(anchor_y_steps) // num_anchor_per_query
 
         # you'd better set dim_per_head to a power of 2
@@ -307,7 +316,7 @@ class MSDeformableAttention3D(BaseModule):
         return output
 
 
-@TRANSFORMER_LAYER.register_module()
+@MODELS.register_module()
 class LATRDecoderLayer(BaseTransformerLayer):
     def __init__(self,
                  attn_cfgs,
@@ -346,7 +355,7 @@ class LATRDecoderLayer(BaseTransformerLayer):
         return query
 
 
-@TRANSFORMER_LAYER_SEQUENCE.register_module()
+@MODELS.register_module()
 class LATRTransformerDecoder(TransformerLayerSequence):
     def __init__(self,
                  *args, embed_dims=None,
@@ -522,15 +531,15 @@ class LATRTransformerDecoder(TransformerLayerSequence):
         return torch.stack(intermediate), project_results, outputs_classes, outputs_coords
 
 
-@TRANSFORMER.register_module()
+@MODELS.register_module()
 class LATRTransformer(BaseModule):
     def __init__(self, encoder=None, decoder=None, init_cfg=None):
         super(LATRTransformer, self).__init__(init_cfg=init_cfg)
         if encoder is not None:
-            self.encoder = build_transformer_layer_sequence(encoder)
+            self.encoder = MODELS.build(encoder)
         else:
             self.encoder = None
-        self.decoder = build_transformer_layer_sequence(decoder)
+        self.decoder = MODELS.build(decoder)
         self.embed_dims = self.decoder.embed_dims
         self.init_weights()
 

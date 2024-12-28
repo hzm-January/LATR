@@ -1,5 +1,7 @@
 import argparse
-from mmcv.utils import Config, DictAction
+# from mmcv.utils import Config, DictAction
+from mmengine.config import Config, DictAction
+
 
 from utils.utils import *
 from experiments.ddp import *

@@ -8,12 +8,19 @@ from torch.nn import init
 import torch.nn.functional as F
 from torch.nn.init import normal_
 
-from mmcv.cnn import bias_init_with_prob
-from mmdet.models.builder import build_loss
-from mmdet.models.utils import build_transformer
-from mmdet.core import multi_apply
+# from mmcv.cnn import bias_init_with_prob
+from mmengine.model import bias_init_with_prob
+# from mmdet.models.builder import build_loss
+from mmdet.registry import MODELS as MMDET_REGISTRY_MODELS
+# from mmdet.models.utils import build_transformer
+# from mmdet.models.utils import build_transformer
 
-from mmcv.utils import Config
+# from mmdet.core import multi_apply
+from mmdet.models.utils import multi_apply
+
+# from mmcv.utils import Config
+from mmengine.config import Config
+
 from models.sparse_ins import SparseInsDecoder
 from .utils import inverse_sigmoid
 from .transformer_bricks import *
@@ -83,7 +90,7 @@ class LATRHead(nn.Module):
 
         self.num_y_steps = args.num_y_steps
         self.register_buffer('anchor_y_steps',
-            torch.from_numpy(args.anchor_y_steps).float())
+            torch.from_numpy(np.array(args.anchor_y_steps)).float())
         self.register_buffer('anchor_y_steps_dense',
             torch.from_numpy(args.anchor_y_steps_dense).float())
 
@@ -106,8 +113,10 @@ class LATRHead(nn.Module):
         self.project_loss_weight = project_loss_weight
 
         loss_reg['reduction'] = 'none'
-        self.reg_crit = build_loss(loss_reg)
-        self.cls_crit = build_loss(loss_cls)
+        # self.reg_crit = build_loss(loss_reg)
+        # self.cls_crit = build_loss(loss_cls)
+        self.reg_crit = MMDET_REGISTRY_MODELS.build(loss_reg)
+        self.cls_crit = MMDET_REGISTRY_MODELS.build(loss_cls)
         self.bce_loss = build_nn_loss(loss_vis)
         self.sparse_ins = SparseInsDecoder(cfg=sparse_ins_decoder)
 
@@ -120,13 +129,13 @@ class LATRHead(nn.Module):
             nn.ReLU(),
             nn.Conv2d(self.embed_dims*4, self.embed_dims, kernel_size=1, stride=1, padding=0),
         )
-        self.positional_encoding = build_positional_encoding(positional_encoding)
+        self.positional_encoding = MMDET_REGISTRY_MODELS.build(positional_encoding)
         self.position_encoder = nn.Sequential(
             nn.Conv2d(self.position_dim, self.embed_dims*4, kernel_size=1, stride=1, padding=0),
             nn.ReLU(),
             nn.Conv2d(self.embed_dims*4, self.embed_dims, kernel_size=1, stride=1, padding=0),
         )
-        self.transformer = build_transformer(transformer)
+        self.transformer = MMDET_REGISTRY_MODELS.build(transformer)
         self.query_embedding = nn.Sequential(
             nn.Linear(self.embed_dims, self.embed_dims),
             nn.ReLU(),

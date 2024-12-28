@@ -35,8 +35,8 @@ from scipy.special import softmax
 import logging, datetime
 
 from experiments.gpu_utils import is_main_process
-from mmdet.utils import get_root_logger as get_mmdet_root_logger
-
+# from mmdet.utils import get_root_logger as get_mmdet_root_logger
+from mmengine.logging.logger import MMLogger
 
 def create_logger(args):
     datenow = datetime.datetime.now()
@@ -58,8 +58,8 @@ def create_logger(args):
                         )
 
     # logger = logging.getLogger(filename)
-    logger = get_mmdet_root_logger(log_file=filename, log_level=logging.INFO)
-
+    # logger = get_mmdet_root_logger(log_file=filename, log_level=logging.INFO)
+    logger = MMLogger.get_instance(name='aald-01', log_file=filename, distributed=False, log_level=logging.INFO)
     return logger
 
 

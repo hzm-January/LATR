@@ -24,8 +24,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from .ddp import *
 import os.path as osp
 from .gpu_utils import gpu_available
-from mmcv.runner.optimizer import build_optimizer
-
+# from mmcv.runner.optimizer import build_optimizer
+from mmengine.optim import build_optim_wrapper
 
 class Runner:
     def __init__(self, args):
@@ -589,7 +589,10 @@ class Runner:
             )
 
         # Define optimizer and scheduler
-        optimizer = build_optimizer(
+        # optimizer = build_optimizer(
+        #     model,
+        #     args.optimizer_cfg)
+        optimizer = build_optim_wrapper(
             model,
             args.optimizer_cfg)
         scheduler = define_scheduler(
