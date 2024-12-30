@@ -37,6 +37,7 @@ Evaluation metrics includes:
 
 from copy import deepcopy
 import numpy as np
+import json
 from utils.utils import *
 from utils.MinCostFlow import SolveMinCostFlow
 
@@ -222,6 +223,10 @@ class LaneEval(object):
         match_results = SolveMinCostFlow(adj_mat, cost_mat)
         match_results = np.array(match_results)
 
+        print('-'*40)
+        print(match_results)
+        print('-'*40)
+
         # only a match with avg cost < self.dist_th is consider valid one
         match_gt_ids = []
         match_pred_ids = []
@@ -253,8 +258,9 @@ class LaneEval(object):
                     z_error_far.append(z_dist_mat_far[gt_i, pred_i])
         # # Visulization to be added
         # if vis:
-        #     pass 
-        return r_lane, p_lane, c_lane, cnt_gt, cnt_pred, match_num, x_error_close, x_error_far, z_error_close, z_error_far
+        #     pass
+        print(f'----gt_ids--{match_gt_ids}----pred_ids--{match_pred_ids}')
+        return r_lane, p_lane, c_lane, cnt_gt, cnt_pred, match_num, x_error_close, x_error_far, z_error_close, z_error_far, match_results
 
 
     def bench_one_submit(self, pred_dir, gt_dir, test_txt, prob_th=0.5, vis=False):
@@ -356,7 +362,7 @@ class LaneEval(object):
             # N to N matching of lanelines
             r_lane, p_lane, c_lane, cnt_gt, cnt_pred, match_num, \
             x_error_close, x_error_far, \
-            z_error_close, z_error_far = self.bench(pred_lanes,
+            z_error_close, z_error_far, match_results = self.bench(pred_lanes,
                                                     pred_category, 
                                                     gt_lanes,
                                                     gt_visibility,
@@ -433,14 +439,19 @@ class LaneEval(object):
         laneline_z_error_close = []
         laneline_z_error_far = []
 
+        pred_vis_results = []
+        gt_vis_results = []
+
         gt_num_all, pred_num_all = 0, 0
-        for i, pred in enumerate(json_pred):
+        for i, pred in enumerate(json_pred): # 一个batch中有8张图片，i 表示第 i 张图片
             if 'file_path' not in pred or 'pred_laneLines' not in pred:
                 raise Exception('file_path or lane_lines not in some predictions.')
             raw_file = pred['file_path']
 
             pred_lanes = pred['pred_laneLines']
             pred_lanes_prob = pred['pred_laneLines_prob']
+            pred_lanes_cls = pred['pred_lanelines_cls']
+
             if model_name == "GenLaneNet":
                 pred_lanes = [pred_lanes[ii] for ii in range(len(pred_lanes_prob)) if
                               pred_lanes_prob[ii] > prob_th]
@@ -459,6 +470,7 @@ class LaneEval(object):
                 raise Exception('Some raw_file from your predictions do not exist in the test tasks.')
             
             gt = gts[raw_file]
+
 
             # evaluate lanelines
             assert 'extrinsic' in gt and 'intrinsic' in gt
@@ -538,9 +550,16 @@ class LaneEval(object):
             # N to N matching of lanelines
             gt_num_all += len(gt_lanes)
             pred_num_all += len(pred_lanes)
+
+            # print('---------------'*4)
+            # print(pred_num_all)
+            # print(type(pred_lanes))
+            # print(pred_lanes[0])
+            # print('---------------' * 4)
+
             r_lane, p_lane, c_lane, cnt_gt, cnt_pred, match_num, \
             x_error_close, x_error_far, \
-            z_error_close, z_error_far = self.bench(pred_lanes,
+            z_error_close, z_error_far, match_results = self.bench(pred_lanes,
                                                     pred_category, 
                                                     gt_lanes,
                                                     gt_visibility,
@@ -557,6 +576,43 @@ class LaneEval(object):
             laneline_x_error_far.extend(x_error_far)
             laneline_z_error_close.extend(z_error_close)
             laneline_z_error_far.extend(z_error_far)
+
+            # save prediction
+            pred_vis_result = {}
+            pred_vis_result['file_path'] = pred['file_path']
+            pred_lane_lines = []
+
+            if len(match_results):
+                pred_match_ids = match_results[:,1] # pred lane id
+                gt_match_ids = match_results[:,0] # gt lane id
+                for i, k in enumerate(pred_match_ids):
+                    # print(type(pred_lanes[k]))
+                    # print(type(pred_lanes_cls[k]))
+                    # print(type(pred_lanes_prob[k]))
+                    # print(type(pred_lanes[k][0][0]))
+                    # # print(type(pred_lanes_cls[k][0]))
+                    # print(type(pred_lanes_prob[k][0]))
+                    pred_lane_lines.append({'xyz': np.array(pred_lanes[k]).astype(float).tolist(), 'category': gt_category[gt_match_ids[i]], 'laneLines_prob': np.max(pred_lanes_prob[k]).item()})
+            pred_vis_result['lane_lines'] = pred_lane_lines
+            pred_vis_results.append(pred_vis_result)
+
+
+        # # save
+        # # 保存路径
+        # output_save_path = "/root/autodl-tmp/output/latr/v3/"
+        # # 文件名
+        # output_save_file = os.path.join(output_save_path, "lane3d_prediction.json")
+        # # 检查路径是否存在，不存在则创建
+        # if not os.path.exists(output_save_path):
+        #     os.makedirs(output_save_path)
+        #     print(f"创建路径: {output_save_path}")
+        # # 将每个字典作为一行写入文件
+        # with open(output_save_file, 'w', encoding='utf-8') as f: # 这里可以修改为追加
+        #     for item in pred_vis_results:
+        #         print(item)
+        #         json.dump(item, f)
+        #         f.write('\n')
+
 
         output_stats = []
         laneline_stats = np.array(laneline_stats)
@@ -622,5 +678,5 @@ class LaneEval(object):
         output_stats.append(np.sum(laneline_stats[:, 4]))   # 12
         output_stats.append(np.sum(laneline_stats[:, 5]))   # 13
 
-        return output_stats
+        return output_stats, pred_vis_results
 

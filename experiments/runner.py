@@ -281,9 +281,9 @@ class Runner:
         # Start validation loop
         with torch.no_grad():
             val_pbar = tqdm(total=len(loader), ncols=50)
-            
-            for i, extra_dict in enumerate(loader):
-                val_pbar.update(1)
+            pred_all_result_vis = []
+            for i, extra_dict in enumerate(loader): # 1480个batch, batch size=8, all_data_len = 11839
+                val_pbar.update(1) # i 表示第 i 个batch
 
                 if not args.no_cuda:
                     json_files = extra_dict.pop('idx_json_file')
@@ -323,8 +323,9 @@ class Runner:
                     self.logger.info('Test: [{0}/{1}]'.format(i+1, len(loader)))
 
                 # Write results
-                for j in range(num_el):
+                for j in range(num_el): # batch size
                     json_file = json_files[j]
+                    # print(f'json_file: {json_file}')
                     if cam_extrinsics_all is not None:
                         extrinsic = cam_extrinsics_all[j].cpu().numpy()
                         intrinsic = cam_intrinsics_all[j].cpu().numpy()
@@ -355,6 +356,7 @@ class Runner:
                     # pred in ground
                     lane_pred = all_line_preds[j].cpu().numpy()
                     cls_pred = torch.argmax(all_cls_scores[j], dim=-1).cpu().numpy()
+                    # print(f'-----cls_pred---: {cls_pred}')
                     pos_lanes = lane_pred[cls_pred > 0]
 
                     if self.args.num_category > 1:
@@ -392,6 +394,7 @@ class Runner:
 
                     json_line["pred_laneLines"] = lanelines_pred
                     json_line["pred_laneLines_prob"] = lanelines_prob
+                    json_line['pred_lanelines_cls'] = cls_pred
 
                     pred_lines_sub.append(copy.deepcopy(json_line))
                     img_path = json_line['file_path']
@@ -401,16 +404,34 @@ class Runner:
             val_pbar.close()
 
             if 'openlane' in args.dataset_name:
-                eval_stats = self.evaluator.bench_one_submit_ddp(
+                eval_stats, pred_vis_results = self.evaluator.bench_one_submit_ddp(
                     pred_lines_sub, gt_lines_sub, args.model_name,
                     args.pos_threshold, vis=False)
+                pred_all_result_vis.extend(pred_vis_results)
+
+                # save
+                # 保存路径
+                output_save_path = "/root/autodl-tmp/output/latr/v5/"
+                # 文件名
+                output_save_file = os.path.join(output_save_path, "lane3d_prediction_latr_v5.json")
+                # 检查路径是否存在，不存在则创建
+                if not os.path.exists(output_save_path):
+                    os.makedirs(output_save_path)
+                    print(f"创建路径: {output_save_path}")
+                # 将每个字典作为一行写入文件
+                with open(output_save_file, 'w', encoding='utf-8') as f:
+                    for item in pred_all_result_vis:
+                        # print(item)
+                        json.dump(item, f)
+                        f.write('\n')
+
             elif 'once' in args.dataset_name:
                 eval_stats = self.evaluator.lane_evaluation(
                     args.data_dir + 'val', '%s/once_pred/test' % (args.save_path),
                     args.eval_config_dir, args)
             elif 'apollo' in args.dataset_name:
                 self.logger.info(' >>> eval mAP | [0.05, 0.95]')
-                eval_stats = self.evaluator.bench_one_submit_ddp(
+                eval_stats, pred_vis_results = self.evaluator.bench_one_submit_ddp(
                     pred_lines_sub, gt_lines_sub,
                     args.model_name, args.pos_threshold, vis=False)
             else:

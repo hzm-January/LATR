@@ -192,4 +192,5 @@ optimizer_cfg = dict(
             'sampling_offsets': dict(lr_mult=0.1),
         }),
     weight_decay=0.01)
-evaluate_case = True #''
+# evaluate_case = True #''
+evaluate_case = False #''

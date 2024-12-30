@@ -391,9 +391,9 @@ class LaneDataset(Dataset):
         seg_label = np.zeros((self.h_net, self.w_net), dtype=np.int8)
         # seg idx has the same order as gt_lanes
         seg_idx_label = np.zeros((self.max_lanes, self.h_net, self.w_net), dtype=np.uint8)
-        ground_lanes = np.zeros((self.max_lanes, self.anchor_dim), dtype=np.float32)
+        ground_lanes = np.zeros((self.max_lanes, self.anchor_dim), dtype=np.float)
         ground_lanes_dense = np.zeros(
-            (self.max_lanes, self.num_y_steps_dense * 3), dtype=np.float32)
+            (self.max_lanes, self.num_y_steps_dense * 3), dtype=np.float)
         gt_lanes = _label_laneline_org # ground
         gt_laneline_img = [[0]] * len(gt_lanes)
 
@@ -580,7 +580,7 @@ def get_loader(transformed_dataset, args):
                                 worker_init_fn=seed_worker,
                                 generator=g)
 
-    if args.dist:
+    if args.dist: # True
         return data_loader, data_sampler
     return data_loader
 
