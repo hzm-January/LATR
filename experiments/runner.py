@@ -411,9 +411,9 @@ class Runner:
 
                 # save
                 # 保存路径
-                output_save_path = "/root/autodl-tmp/output/latr/v5/"
+                output_save_path = "/root/autodl-tmp/output/latr/v7/"
                 # 文件名
-                output_save_file = os.path.join(output_save_path, "lane3d_prediction_latr_v5.json")
+                output_save_file = os.path.join(output_save_path, "lane3d_prediction_latr_v7.json")
                 # 检查路径是否存在，不存在则创建
                 if not os.path.exists(output_save_path):
                     os.makedirs(output_save_path)
