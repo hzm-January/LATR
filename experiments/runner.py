@@ -276,12 +276,14 @@ class Runner:
         pred_lines_sub = []
         gt_lines_sub = []
 
+        pred_all_vis_results=[]
+
         model.eval()
 
         # Start validation loop
-        with torch.no_grad():
+        with (torch.no_grad()):
             val_pbar = tqdm(total=len(loader), ncols=50)
-            pred_all_result_vis = []
+
             for i, extra_dict in enumerate(loader): # 1480个batch, batch size=8, all_data_len = 11839
                 val_pbar.update(1) # i 表示第 i 个batch
 
@@ -358,6 +360,7 @@ class Runner:
                     cls_pred = torch.argmax(all_cls_scores[j], dim=-1).cpu().numpy()
                     # print(f'-----cls_pred---: {cls_pred}')
                     pos_lanes = lane_pred[cls_pred > 0]
+                    vis_cls_lane = cls_pred[cls_pred > 0]
 
                     if self.args.num_category > 1:
                         scores_pred = torch.softmax(all_cls_scores[j][cls_pred > 0], dim=-1).cpu().numpy()
@@ -367,6 +370,7 @@ class Runner:
                     if pos_lanes.shape[0]:
                         lanelines_pred = []
                         lanelines_prob = []
+                        lanelines_cls = vis_cls_lane
                         xs = pos_lanes[:, 0:args.num_y_steps]
                         ys = np.tile(np.array(args.anchor_y_steps).copy()[None, :], (xs.shape[0], 1))
                         zs = pos_lanes[:, args.num_y_steps:2*args.num_y_steps]
@@ -388,9 +392,11 @@ class Runner:
                                      cur_ys[tmp_inner_idx],
                                      cur_zs[tmp_inner_idx]])
                             lanelines_prob.append(scores_pred[tmp_idx].tolist())
+
                     else:
                         lanelines_pred = []
                         lanelines_prob = []
+                        lanelines_cls = []
 
                     json_line["pred_laneLines"] = lanelines_pred
                     json_line["pred_laneLines_prob"] = lanelines_prob
@@ -401,29 +407,80 @@ class Runner:
                     
                     if args.dataset_name == 'once':
                         self.save_eval_result_once(args, img_path, lanelines_pred, lanelines_prob)
+
+
+                    #---------------------------------------------------------------------------
+                    # save prediction
+                    pred_vis_result = {}
+                    pred_vis_result['file_path'] = json_line['file_path']
+                    pred_lane_lines = []
+                    cnt_pred_vis = len(lanelines_pred)
+                    print('+++++++++++++ new start +++++++++++++')
+                    print(f'-----cnt_pred_vis:{cnt_pred_vis}')
+                    # print(f'-----lanelines_prob:{lanelines_prob}')
+                    # print(f'-----cls_pred:{cls_pred}') # numpy array 40个，这里面没有删除概率低的，大多数都是0
+                    print(f'-----lanelines_cls:{lanelines_cls}') #  保留非零
+                    cnt_line_num = 0
+                    for i, pred_lane_vis in enumerate(lanelines_pred):
+                        if np.max(lanelines_prob[i])<0.5: continue
+                        # print(type(pred_lanes[k]))
+                        # print(type(pred_lanes_cls[k]))
+                        # print(type(pred_lanes_prob[k]))
+                        # print(type(pred_lanes[k][0][0]))
+                        # # print(type(pred_lanes_cls[k][0]))
+                        # print(type(pred_lanes_prob[k][0]))
+                        cnt_line_num+=1
+                        # print(f'------------lanelines_cls[{i}]:{lanelines_cls[i]}')
+                        # print(f'------------gt_category[i]:{[i]}')
+                        pred_lane_lines.append({'xyz': np.array(lanelines_pred[i]).astype(float).tolist(),
+                                                'category': int(lanelines_cls[i]),
+                                                'laneLines_prob': float(np.argmax(lanelines_prob[i]))})
+                    print(f'------cnt_line_num:{cnt_line_num}')
+                    pred_vis_result['lane_lines'] = pred_lane_lines
+                    pred_all_vis_results.append(pred_vis_result)
+
             val_pbar.close()
+
+            # save
+            #-------------------------------------------------------------------------------------------------
+            # 保存路径
+            output_save_path = "/root/autodl-tmp/output/latr/v9/"
+            # 文件名
+            output_save_file = os.path.join(output_save_path, "lane3d_prediction_latr_v8.json")
+            # 检查路径是否存在，不存在则创建
+            if not os.path.exists(output_save_path):
+                os.makedirs(output_save_path)
+                print(f"创建路径: {output_save_path}")
+            # 将每个字典作为一行写入文件
+            with open(output_save_file, 'w', encoding='utf-8') as f:
+                for item in pred_all_vis_results:
+                    # print(item)
+                    json.dump(item, f)
+                    f.write('\n')
+
+            #----------------------------------------------------------------------------------------------------
 
             if 'openlane' in args.dataset_name:
                 eval_stats, pred_vis_results = self.evaluator.bench_one_submit_ddp(
                     pred_lines_sub, gt_lines_sub, args.model_name,
                     args.pos_threshold, vis=False)
-                pred_all_result_vis.extend(pred_vis_results)
+                # pred_all_result_vis.extend(pred_vis_results)
 
-                # save
-                # 保存路径
-                output_save_path = "/root/autodl-tmp/output/latr/v7/"
-                # 文件名
-                output_save_file = os.path.join(output_save_path, "lane3d_prediction_latr_v7.json")
-                # 检查路径是否存在，不存在则创建
-                if not os.path.exists(output_save_path):
-                    os.makedirs(output_save_path)
-                    print(f"创建路径: {output_save_path}")
-                # 将每个字典作为一行写入文件
-                with open(output_save_file, 'w', encoding='utf-8') as f:
-                    for item in pred_all_result_vis:
-                        # print(item)
-                        json.dump(item, f)
-                        f.write('\n')
+                # # save
+                # # 保存路径
+                # output_save_path = "/root/autodl-tmp/output/latr/v7/"
+                # # 文件名
+                # output_save_file = os.path.join(output_save_path, "lane3d_prediction_latr_v7.json")
+                # # 检查路径是否存在，不存在则创建
+                # if not os.path.exists(output_save_path):
+                #     os.makedirs(output_save_path)
+                #     print(f"创建路径: {output_save_path}")
+                # # 将每个字典作为一行写入文件
+                # with open(output_save_file, 'w', encoding='utf-8') as f:
+                #     for item in pred_all_result_vis:
+                #         # print(item)
+                #         json.dump(item, f)
+                #         f.write('\n')
 
             elif 'once' in args.dataset_name:
                 eval_stats = self.evaluator.lane_evaluation(

@@ -577,30 +577,30 @@ class LaneEval(object):
             laneline_z_error_close.extend(z_error_close)
             laneline_z_error_far.extend(z_error_far)
 
-            # save prediction
-            pred_vis_result = {}
-            pred_vis_result['file_path'] = pred['file_path']
-            pred_lane_lines = []
-            print(f'----------------match:\n{match_results}')
-            print(f'----------------pred_category:{pred_category}')
-            print(f'----------------gt_category:{gt_category}')
-            if len(match_results):
-                pred_match_ids = match_results[:,1] # pred lane id
-                gt_match_ids = match_results[:,0] # gt lane id
-                for i, k in enumerate(pred_match_ids):
-                    # print(type(pred_lanes[k]))
-                    # print(type(pred_lanes_cls[k]))
-                    # print(type(pred_lanes_prob[k]))
-                    # print(type(pred_lanes[k][0][0]))
-                    # # print(type(pred_lanes_cls[k][0]))
-                    # print(type(pred_lanes_prob[k][0]))
-                    print(f'------------pred_category[k]:{pred_category[k]}')
-                    print(f'------------gt_category[i]:{gt_category[i]}')
-                    print(f'------------gt_category[gt_match_ids[i]]:{gt_category[gt_match_ids[i]]}')
-                    # pred_lane_lines.append({'xyz': np.array(pred_lanes[k]).astype(float).tolist(), 'category': gt_category[gt_match_ids[i]], 'laneLines_prob': np.max(pred_lanes_prob[k]).item()})
-                    pred_lane_lines.append({'xyz': np.array(pred_lanes[k]).astype(float).tolist(), 'category': int(pred_category[k]), 'laneLines_prob': np.max(pred_lanes_prob[k]).item()})
-            pred_vis_result['lane_lines'] = pred_lane_lines
-            pred_vis_results.append(pred_vis_result)
+            # # save prediction
+            # pred_vis_result = {}
+            # pred_vis_result['file_path'] = pred['file_path']
+            # pred_lane_lines = []
+            # print(f'----------------match:\n{match_results}')
+            # print(f'----------------pred_category:{pred_category}')
+            # print(f'----------------gt_category:{gt_category}')
+            # if len(match_results):
+            #     pred_match_ids = match_results[:,1] # pred lane id
+            #     gt_match_ids = match_results[:,0] # gt lane id
+            #     for i, k in enumerate(pred_match_ids):
+            #         # print(type(pred_lanes[k]))
+            #         # print(type(pred_lanes_cls[k]))
+            #         # print(type(pred_lanes_prob[k]))
+            #         # print(type(pred_lanes[k][0][0]))
+            #         # # print(type(pred_lanes_cls[k][0]))
+            #         # print(type(pred_lanes_prob[k][0]))
+            #         print(f'------------pred_category[k]:{pred_category[k]}')
+            #         print(f'------------gt_category[i]:{gt_category[i]}')
+            #         print(f'------------gt_category[gt_match_ids[i]]:{gt_category[gt_match_ids[i]]}')
+            #         # pred_lane_lines.append({'xyz': np.array(pred_lanes[k]).astype(float).tolist(), 'category': gt_category[gt_match_ids[i]], 'laneLines_prob': np.max(pred_lanes_prob[k]).item()})
+            #         pred_lane_lines.append({'xyz': np.array(pred_lanes[k]).astype(float).tolist(), 'category': int(pred_category[k]), 'laneLines_prob': np.max(pred_lanes_prob[k]).item()})
+            # pred_vis_result['lane_lines'] = pred_lane_lines
+            # pred_vis_results.append(pred_vis_result)
 
 
         # # save
